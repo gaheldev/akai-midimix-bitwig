@@ -1,9 +1,11 @@
 # akai-midimix-bitwig
-Akai MIDIMIX Controller Script
+Akai MIDIMIX Controller Script 
+
+_(forked from [@mfeyx](https://github.com/mfeyx/akai-midimix-bitwig))_
 
 # Load the scripts
 
-1. Load the `bitwig.midimix` file into the Akai MidiMix Editor and send it to the hardware. (works through wine)
+1. Load the `bitwig.midimix` file into the Akai MidiMix Editor and send it to the hardware. On Linux, you can run the Editor with wine.
 2. Copy the `midimix.control.js` file into the `Controller Scripts` in your `Bitwig Studio` folder (or where you configured it).
 3. Open `Bitwig` and add the controller.
 
