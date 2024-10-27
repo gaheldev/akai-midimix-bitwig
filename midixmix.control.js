@@ -7,7 +7,7 @@ host.defineMidiPorts(1, 1)
 /* ------------------------------------------------------ */
 /*                    DEBUGGING FEATURE                   */
 /* ------------------------------------------------------ */
-var DEBUG = true
+var DEBUG = false
 
 function debug(bool = false) {
     DEBUG = bool
