@@ -1,4 +1,4 @@
-loadAPI(18)
+loadAPI(19)
 
 host.defineController("Akai", "Akai Midimix", "0.1", "55be219b-aec4-4560-b50d-edd2d5412845", "gahel")
 host.addDeviceNameBasedDiscoveryPair(["MIDI Mix"], ["MIDI Mix"])
@@ -150,6 +150,10 @@ function toBool(val) {
     return val === 127 ? true : false
 }
 
+function toMidi(bool) {
+    return bool === true ? 127 : 0
+}
+
 function handleError(error) {
     println(`${error.name}: ${error.message}`)
     return
@@ -170,6 +174,9 @@ function init() {
     // 8 channel faders, 2 sends, 0 scenes
     trackBank = host.createMainTrackBank(8, 2, 0)
 
+    // make the buttons track Bitwig's state
+    setButtonsObservers()
+
     // main fader
     mainFader = host.createMasterTrack(0)
 }
@@ -181,6 +188,48 @@ function exit() {
 /* ------------------------------------------------------ */
 /*                   MIDI STATUS HANDLER                  */
 /* ------------------------------------------------------ */
+
+/* ---------------------- OBSERVERS --------------------- */
+function setLED(type, index, bool) {
+    try {
+        const value = toMidi(bool);
+        const led = LED_MAPPING[type][index];
+
+        // Only update if there's actually a change
+        if (LED_CACHE[type][index] !== value) {
+            LED_CACHE[type][index] = value;
+            log(`Switch LED: type=${type}, index=${index}, led=${led}, value=${value}`);
+            midiOut.sendMidi(NOTE_ON, led, value);
+        }
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+function setButtonsObservers() {
+    log("reset observers")
+    for (let i = 0; i < 8; i++) {
+        const channel = trackBank.getChannel(i);
+
+        // Clear existing observers first
+        channel.mute().addValueObserver((isMuted) => {
+            log(`Mute state changed for channel ${i}: ${isMuted}`);
+            setLED(MUTE, i, isMuted);
+        });
+
+        // Add observer for solo state as well
+        channel.solo().addValueObserver((isSoloed) => {
+            log(`Solo state changed for channel ${i}: ${isSoloed}`);
+            setLED(SOLO, i, isSoloed);
+        });
+
+        // Add observer for record arm state
+        channel.arm().addValueObserver((isArmed) => {
+            log(`Record arm state changed for channel ${i}: ${isArmed}`);
+            setLED(RECO, i, isArmed);
+        });
+    }
+}
 
 /* ----------------------- NOTE ON ---------------------- */
 function handleNoteOn(cc, value) {
@@ -345,4 +394,11 @@ function onMidi(status, cc, value) {
             break;
     }
     return
+}
+
+/* ------------------------------------------------------ */
+/*                UPDATE CONTROLLER STATE                 */
+/* ------------------------------------------------------ */
+
+function flush() {
 }
