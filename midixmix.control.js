@@ -335,11 +335,7 @@ function handleButton(cc, type, value) {
             var channel = trackBank.getChannel(index)
             var value = toggleValue(LED_CACHE[type][index])
             channel[type]().set(toBool(value))
-            var led = LED_MAPPING[type][index]
-            LED_CACHE[type][index] = value
-            midiOut.sendMidi(NOTE_ON, led, value)
             log(`handleButton -> CH${index + 1} : ${type}`)
-            return
         }
         return
     } catch (error) {
