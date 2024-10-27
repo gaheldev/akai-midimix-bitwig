@@ -9,21 +9,19 @@ Akai MIDIMIX Controller Script
 
 # How it's set up
 
-This script is based on my needs. Feel free to modify it :)
-
-
 #### The script provides the following functions:
 
 - Channel faders are mapped to Track 1-8, with max values of "0 db"
 - Master fader will handle the main output
-- `Rec Arm` buttons are mapped to *mute* the channels (since it uses the red led, and for me red is connected to muting channels)
-- The `Mute` buttons are mapped to *solo* the channels (since the yellow LED signals soloed channels for me)
-- If you press `Solo` + `Mute` you are will *rec arm* the specific channel. I use the `Solo` button more like "shift".
-- The `encoders` will control the FX sends, where the top row handles `FX1`, the middle row `FX2`, and the bottom row handles `FX3`.
+- `Bank Left` or `Bank Right` scrolls 8 channels up/down (or left/right depending on the view)
+- `Solo` + `Bank Left` or  `Solo` + `Bank Right` scrolls 1 channel up/down (or left/right depending on the view)
+- `Rec Arm` buttons
+- `Mute` buttons
+- If you press `Solo` you will see the *solo* state of the channels
+- If you press `Solo` + `Mute` you will toggle *solo* on the channel
+- The `encoders` control the panning and FX sends, where the top row handles `FX1`, the middle row `FX2`, and the bottom row handles `Pan`.
+
+It is also possible to remap any of the knobs and faders through MIDI learn.
 
 # To do
-- `Bank left` and `Bank right` are currently not used.
-- If you *rec arm* the channel (solo+mute), the LEDs are currently not working
-
-# Plans
-Currently, I do not have plans to work on the script. Feel free to fork it.
+- `Bank left` and `Bank right` could show if it is possible to scroll more by being lit
