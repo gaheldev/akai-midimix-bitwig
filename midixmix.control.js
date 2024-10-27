@@ -122,12 +122,16 @@ const LED_MAPPING = {
     [SOLO]: LED_SOLO, // row 1
     [RECO]: LED_RECO, // shift + row 1
     [MUTE]: LED_MUTE, // row 2
+    [BANKL]: [0x019],
+    [BANKR]: [0x01a],
 }
 
 const LED_CACHE = {
     [SOLO]: [0, 0, 0, 0, 0, 0, 0, 0],
     [MUTE]: [0, 0, 0, 0, 0, 0, 0, 0],
     [RECO]: [0, 0, 0, 0, 0, 0, 0, 0],
+    [BANKL]: [0],
+    [BANKR]: [0],
 }
 
 /* ------------------------------------------------------ */
@@ -239,18 +243,22 @@ function handleNoteOn(cc, value) {
             case !SHIFT_PRESSED && BANKL:
                 log("BANK LEFT ON")
                 trackBank.scrollPageBackwards()
+                setLED(BANKL, 0, true)
                 break;
             case SHIFT_PRESSED && BANKL:
                 log("SOLO BANK LEFT ON")
                 trackBank.scrollBackwards()
+                setLED(BANKL, 0, true)
                 break;
             case !SHIFT_PRESSED && BANKR:
                 log("BANK RIGHT ON")
                 trackBank.scrollPageForwards()
+                setLED(BANKR, 0, true)
                 break;
             case SHIFT_PRESSED && BANKR:
                 log("SOLO BANK RIGHT ON")
                 trackBank.scrollForwards()
+                setLED(BANKR, 0, true)
                 break;
             case SHIFT:
                 SHIFT_PRESSED = !SHIFT_PRESSED && cc == SHIFT
@@ -272,15 +280,19 @@ function handleNoteOff(cc, value) {
         switch (cc) {
             case !SHIFT_PRESSED && BANKL:
                 log("BANK LEFT OFF")
+                setLED(BANKL, 0, false)
                 break;
             case SHIFT_PRESSED && BANKL:
                 log("SOLO BANK LEFT OFF")
+                setLED(BANKL, 0, false)
                 break;
             case !SHIFT_PRESSED && BANKR:
                 log("BANK RIGHT OFF")
+                setLED(BANKR, 0, false)
                 break;
             case SHIFT_PRESSED && BANKR:
                 log("SOLO BANK RIGHT OFF")
+                setLED(BANKR, 0, false)
                 break;
             case SHIFT:
                 SHIFT_PRESSED = !SHIFT_PRESSED && cc == SHIFT
