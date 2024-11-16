@@ -22,6 +22,9 @@ _(forked from [@mfeyx](https://github.com/mfeyx/akai-midimix-bitwig))_
 - If you press `Solo` you will see the *solo* state of the channels
 - If you press `Solo` + `Mute` you will toggle *solo* on the channel
 - The `encoders` control the panning and FX sends, where the top row handles `FX1`, the middle row `FX2`, and the bottom row handles `Pan`.
+- Swap *mute* and *solo* buttons by double pressing `Solo`
+
+Persistent Solo mode:
 
 It is also possible to remap any of the knobs and faders through MIDI learn.
 

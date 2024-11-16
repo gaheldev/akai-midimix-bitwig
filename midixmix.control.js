@@ -50,6 +50,11 @@ const RECO = "arm"
 /*                         CONSTS                         */
 /* ------------------------------------------------------ */
 var SHIFT_PRESSED = false
+var PERSISTENT_SOLO_MODE = false // on double solo press
+
+// everytime shift is released, we update the timestamp
+var SHIFT_RELEASED_LAST_TIMESTAMP = 0
+var DOUBLE_SHIFT_RELEASED_WINDOW = 500 // ms
 
 /* ------------------------------------------------------ */
 /*                        HARDWARE                        */
@@ -121,9 +126,9 @@ const LED_BANKL = [0x019]
 const LED_BANKR = [0x01a]
 
 const LED_MAPPING = {
-    [SOLO]: LED_SOLO, // row 1
-    [RECO]: LED_RECO, // shift + row 1
-    [MUTE]: LED_MUTE, // row 2
+    [SOLO]: LED_SOLO, // shift + row 1
+    [RECO]: LED_RECO, // row 2
+    [MUTE]: LED_MUTE, // row 1
     [BANKL]: LED_BANKL,
     [BANKR]: LED_BANKR,
 }
@@ -165,6 +170,11 @@ function handleError(error) {
     return
 }
 
+function getTime() {
+    const d = new Date();
+    return d.getTime();
+}
+
 
 /* ------------------------------------------------------ */
 /*                     INIT CONTROLLER                    */
@@ -196,13 +206,13 @@ function exit() {
 /* ------------------------------------------------------ */
 
 /* ---------------------- OBSERVERS --------------------- */
-function setLED(type, index, bool) {
+function setLED(type, index, bool, force_update=false) {
     try {
         const value = toMidi(bool);
         const led = LED_MAPPING[type][index];
 
         // Only update if there's actually a change
-        if (LED_CACHE[type][index] !== value) {
+        if (LED_CACHE[type][index] !== value || force_update) {
             LED_CACHE[type][index] = value;
             log(`Switch LED: type=${type}, index=${index}, led=${led}, value=${value}`);
             midiOut.sendMidi(NOTE_ON, led, value);
@@ -236,6 +246,17 @@ function setButtonsObservers() {
         });
     }
 }
+
+function resetLEDs() {
+    for (let i = 0; i < 8; i++) {
+        const channel = trackBank.getChannel(i);
+
+        setLED(MUTE, i, channel.mute().getAsBoolean(), true);
+        setLED(SOLO, i, channel.solo().getAsBoolean(), true);
+        setLED(RECO, i, channel.arm().getAsBoolean(), true);
+    }
+}
+
 
 /* ----------------------- NOTE ON ---------------------- */
 function handleNoteOn(cc, value) {
@@ -299,6 +320,15 @@ function handleNoteOff(cc, value) {
             case SHIFT:
                 SHIFT_PRESSED = !SHIFT_PRESSED && cc == SHIFT
                 log(`SHIFT pressed: ${SHIFT_PRESSED}`)
+
+                if (!SHIFT_PRESSED) {
+                    let current_time = getTime()
+                    if ((current_time - SHIFT_RELEASED_LAST_TIMESTAMP) < DOUBLE_SHIFT_RELEASED_WINDOW) {
+                        togglePersistentSolo()
+                    }
+                    SHIFT_RELEASED_LAST_TIMESTAMP = current_time
+                }
+
                 break;
             default:
                 break;
@@ -308,6 +338,37 @@ function handleNoteOff(cc, value) {
         handleError(error)
     }
 }
+
+/* ------------------- PERSISTENT SOLO ------------------ */
+function togglePersistentSolo() {
+    PERSISTENT_SOLO_MODE = !PERSISTENT_SOLO_MODE
+    switchMappings()
+    switchLEDs()
+    resetLEDs()
+    log(`Persistent SOLO mode: ${PERSISTENT_SOLO_MODE}`)
+}
+
+function switchMappings() {
+    let cc_solo = CC_MAPPING[SOLO]
+    let cc_mute = CC_MAPPING[MUTE]
+    let solo_lo = cc_solo.lo
+    let solo_hi = cc_solo.hi
+
+    cc_solo.lo = cc_mute.lo
+    cc_solo.hi = cc_mute.hi
+
+    cc_mute.lo = solo_lo
+    cc_mute.hi = solo_hi
+}
+
+function switchLEDs() {
+    for (let i = 0; i < 8; i++) {
+        let tmp = LED_SOLO[i]
+        LED_SOLO[i] = LED_MUTE[i]
+        LED_MUTE[i] = tmp
+    }
+}
+
 
 /* --------------------- MAIN FADER --------------------- */
 function handleMainVolume(cc, value) {
