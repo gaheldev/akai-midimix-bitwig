@@ -56,6 +56,13 @@ var PERSISTENT_SOLO_MODE = false // on double solo press
 var SHIFT_RELEASED_LAST_TIMESTAMP = 0
 var DOUBLE_SHIFT_RELEASED_WINDOW = 500 // ms
 
+const EXCLUSIVE_SOLO_STATES = {
+    USER: 'User',
+    ON: 'On',
+    OFF: 'Off'
+};
+var EXCLUSIVE_SOLO = EXCLUSIVE_SOLO_STATES.USER;
+
 /* ------------------------------------------------------ */
 /*                        HARDWARE                        */
 /* ------------------------------------------------------ */
@@ -189,6 +196,21 @@ function init() {
 
     // make the buttons track the solo mode
     setPersistentSoloSettingObserver()
+
+    // Create the solo setting
+    multiSoloSetting = host.getPreferences().getEnumSetting(
+        "Exclusive Solo",
+        "Solo Settings",
+        Object.values(EXCLUSIVE_SOLO_STATES),
+        EXCLUSIVE_SOLO
+    );
+
+    multiSoloSetting.addValueObserver(function(value) {
+        if (EXCLUSIVE_SOLO !== value) {
+            EXCLUSIVE_SOLO = value;
+            log(`Multi Solo mode changed to: ${EXCLUSIVE_SOLO}`);
+        }
+    });
 
     // sending to host (bitwig)
     midiIn = host.getMidiInPort(0)
@@ -417,7 +439,15 @@ function handleButton(cc, type, value) {
             var index = cc - CC_MAPPING[type].lo
             var channel = trackBank.getChannel(index)
             var value = toggleValue(LED_CACHE[type][index])
-            channel[type]().set(toBool(value))
+            switch (type) {
+                case SOLO:
+                    switch (EXCLUSIVE_SOLO) {
+                        case EXCLUSIVE_SOLO_STATES.USER: channel.solo().toggleUsingPreferences(false); break;
+                        case EXCLUSIVE_SOLO_STATES.ON: channel.solo().toggle(true); break;
+                        case EXCLUSIVE_SOLO_STATES.OFF: channel.solo().toggle(false); break;
+                    }
+                default: channel[type]().set(toBool(value))
+            }
             log(`handleButton -> CH${index + 1} : ${type}`)
         }
         return
