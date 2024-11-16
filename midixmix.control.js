@@ -63,6 +63,12 @@ const EXCLUSIVE_SOLO_STATES = {
 };
 var EXCLUSIVE_SOLO = EXCLUSIVE_SOLO_STATES.USER;
 
+const FOLLOW_MODES = {
+    MANUAL: 'Manual',
+    CURSOR: 'Follow Cursor'
+};
+FOLLOW_MODE = FOLLOW_MODES.MANUAL
+
 /* ------------------------------------------------------ */
 /*                        HARDWARE                        */
 /* ------------------------------------------------------ */
@@ -212,6 +218,14 @@ function init() {
         }
     });
 
+    // Create the follow mode setting
+    followModeSetting = host.getPreferences().getEnumSetting(
+        "Bank Follow Mode",
+        "Navigation Settings",
+        Object.values(FOLLOW_MODES),
+        FOLLOW_MODE
+    );
+
     // sending to host (bitwig)
     midiIn = host.getMidiInPort(0)
     midiIn.setMidiCallback(onMidi)
@@ -219,8 +233,27 @@ function init() {
     // sending to controller (midimix) -> LED
     midiOut = host.getMidiOutPort(0)
 
+    // Cursor track
+    cursorTrack = host.createCursorTrack("CURSOR_TRACK", "Cursor Track", 0, 0, true);
+
     // 8 channel faders, 2 sends, 0 scenes
     trackBank = host.createMainTrackBank(8, 2, 0)
+
+    // Follow the cursor track's position
+    cursorTrack.position().addValueObserver(function(position) {
+        if (FOLLOW_MODE == FOLLOW_MODES.CURSOR) {
+            // Calculate which position should be the start of our bank
+            // to have the selected track as first track
+            trackBank.scrollPosition().set(position);
+        }
+    });
+
+    // Add observer for the follow mode setting
+    followModeSetting.addValueObserver(function(value) {
+        FOLLOW_MODE = value
+        log(`Follow mode changed to: ${value}`);
+    });
+
 
     // make the buttons track Bitwig's state
     setButtonsObservers()
