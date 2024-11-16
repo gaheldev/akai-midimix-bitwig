@@ -180,6 +180,16 @@ function getTime() {
 /*                     INIT CONTROLLER                    */
 /* ------------------------------------------------------ */
 function init() {
+    // Create the persistent solo setting
+    persistentSoloSetting = host.getPreferences().getBooleanSetting(
+        "Swap mute and Solo buttons",
+        "Solo Settings",
+        false
+    );
+
+    // make the buttons track the solo mode
+    setPersistentSoloSettingObserver()
+
     // sending to host (bitwig)
     midiIn = host.getMidiInPort(0)
     midiIn.setMidiCallback(onMidi)
@@ -341,11 +351,21 @@ function handleNoteOff(cc, value) {
 
 /* ------------------- PERSISTENT SOLO ------------------ */
 function togglePersistentSolo() {
-    PERSISTENT_SOLO_MODE = !PERSISTENT_SOLO_MODE
-    switchMappings()
-    switchLEDs()
-    resetLEDs()
-    log(`Persistent SOLO mode: ${PERSISTENT_SOLO_MODE}`)
+    // Update the preference setting instead of directly modifying PERSISTENT_SOLO_MODE
+    persistentSoloSetting.set(!PERSISTENT_SOLO_MODE);
+    // The value observer will handle the actual mode switch
+}
+
+function setPersistentSoloSettingObserver() {
+    persistentSoloSetting.addValueObserver(function(value) {
+        if (PERSISTENT_SOLO_MODE !== value) {
+            PERSISTENT_SOLO_MODE = value;
+            switchMappings();
+            switchLEDs();
+            resetLEDs();
+            log(`Persistent SOLO mode changed via preferences: ${PERSISTENT_SOLO_MODE}`);
+        }
+    });
 }
 
 function switchMappings() {
