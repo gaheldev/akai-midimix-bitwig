@@ -28,5 +28,10 @@ Persistent Solo mode:
 
 It is also possible to remap any of the knobs and faders through MIDI learn.
 
+# Development
+
+`ctrl + shift + j` to toggle debug console
+
+
 # To do
 - `Bank left` and `Bank right` could show if it is possible to scroll more by being lit
