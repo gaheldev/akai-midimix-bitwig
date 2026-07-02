@@ -3,6 +3,7 @@ loadAPI(19)
 host.defineController("Akai", "Akai Midimix", "0.1", "55be219b-aec4-4560-b50d-edd2d5412845", "gahel")
 host.addDeviceNameBasedDiscoveryPair(["MIDI Mix"], ["MIDI Mix"])
 host.defineMidiPorts(1, 1)
+host.setShouldFailOnDeprecatedUse(true)
 
 /* ------------------------------------------------------ */
 /*                    DEBUGGING FEATURE                   */
@@ -290,7 +291,7 @@ function setLED(type, index, bool, force_update=false) {
 function setButtonsObservers() {
     log("reset observers")
     for (let i = 0; i < 8; i++) {
-        const channel = trackBank.getChannel(i);
+        const channel = trackBank.getItemAt(i);
 
         // Clear existing observers first
         channel.mute().addValueObserver((isMuted) => {
@@ -314,11 +315,11 @@ function setButtonsObservers() {
 
 function resetLEDs() {
     for (let i = 0; i < 8; i++) {
-        const channel = trackBank.getChannel(i);
+        const channel = trackBank.getItemAt(i);
 
-        setLED(MUTE, i, channel.mute().getAsBoolean(), true);
-        setLED(SOLO, i, channel.solo().getAsBoolean(), true);
-        setLED(RECO, i, channel.arm().getAsBoolean(), true);
+        setLED(MUTE, i, channel.mute().get(), true);
+        setLED(SOLO, i, channel.solo().get(), true);
+        setLED(RECO, i, channel.arm().get(), true);
     }
 }
 
@@ -448,16 +449,16 @@ function switchLEDs() {
 /* --------------------- MAIN FADER --------------------- */
 function handleMainVolume(cc, value) {
     log(`Main Fader -> ${cc} : ${value}`)
-    mainFader.getVolume().setRaw(value / 127)
+    mainFader.volume().setRaw(value / 127)
 }
 
 /* -------------------- CHANNEL FADER ------------------- */
 function handleChannelVolume(cc, value) {
     try {
         var index = cc - CC_MAPPING[CHAN].lo
-        var channel = trackBank.getChannel(index)
+        var channel = trackBank.getItemAt(index)
         var volume = (value / 127) //* 0.8
-        channel.getVolume().setRaw(volume)
+        channel.volume().setRaw(volume)
         log(`Changing volume of channel ${index + 1} to ${value}`)
         return
     } catch (error) {
@@ -470,16 +471,22 @@ function handleButton(cc, type, value) {
     try {
         if (value === ON) {
             var index = cc - CC_MAPPING[type].lo
-            var channel = trackBank.getChannel(index)
-            var value = toggleValue(LED_CACHE[type][index])
+            var channel = trackBank.getItemAt(index)
             switch (type) {
                 case SOLO:
                     switch (EXCLUSIVE_SOLO) {
-                        case EXCLUSIVE_SOLO_STATES.USER: channel.solo().toggleUsingPreferences(false); break;
-                        case EXCLUSIVE_SOLO_STATES.ON: channel.solo().toggle(true); break;
-                        case EXCLUSIVE_SOLO_STATES.OFF: channel.solo().toggle(false); break;
+                        case EXCLUSIVE_SOLO_STATES.USER: channel.solo().toggle();      break; // follows Bitwig's solo preference
+                        case EXCLUSIVE_SOLO_STATES.ON:   channel.solo().toggle(true);  break; // force exclusive
+                        case EXCLUSIVE_SOLO_STATES.OFF:  channel.solo().toggle(false); break; // force non-exclusive
                     }
-                default: channel[type]().set(toBool(value))
+                    break;
+                case MUTE:
+                    channel.mute().toggle()
+                    break;
+                case RECO:
+                    channel.arm().toggle()
+                    break;
+                default: channel[type]().toggle() // mute / arm
             }
             log(`handleButton -> CH${index + 1} : ${type}`)
         }
@@ -505,14 +512,14 @@ function handleEncoder(cc, value) {
 }
 
 function pan(chan_index, value) {
-    var channel = trackBank.getChannel(chan_index)
+    var channel = trackBank.getItemAt(chan_index)
     channel.pan().set(value, 128)
     return
 }
 
 function send(send_index, chan_index, value) {
-    var channel = trackBank.getChannel(chan_index)
-    channel.getSend(send_index).set(value, 128)
+    var channel = trackBank.getItemAt(chan_index)
+    channel.sendBank().getItemAt(send_index).set(value, 128)
     return
 }
 
@@ -544,7 +551,7 @@ function onMidi(status, cc, value) {
             break;
 
         default:
-            prinltn(`UNKNOWN STATUS: ${status}, cc: ${cc}, value: ${value}`)
+            println(`UNKNOWN STATUS: ${status}, cc: ${cc}, value: ${value}`)
             break;
     }
     return
